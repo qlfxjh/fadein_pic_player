@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>渐变图片轮播</title>
+<meta name="description" content=" 内容介绍不超过100个中文">
+<meta name="keywords" content=" 内容相关关键词3-5个">
+<link href="../css/base.css" rel="stylesheet" type="text/css" />
+
+<script type="text/javascript" src="../js/jquery-1.7.2.min.js"></script>
+
+
+</head>
+
+<body>
+
+<style type="text/css">
+/*有用的style */
+.news_focus{ position:relative; width:100%; height:304px; overflow:hidden;}
+.news_focus .slider_scroll ul{}
+.news_focus .slider_scroll li{ position:absolute; left:0; top:0; width:100%; z-index:1; height:304px; background-repeat:none; background-position:center 0;}
+.news_focus .slider_scroll li:first-child{}
+
+.news_focus .slider_ctrl{ position:absolute; left:0; bottom:0; width:100%; height:17px; padding-top:3px; text-align:center; z-index:10;}
+.news_focus .slider_ctrl .slider_ctrl_con{ display:inline-block; width:14px; height:14px; margin:0 5px; background:#666; border-radius:100%; border:1px solid #000; cursor:pointer;}
+.news_focus .slider_ctrl .current{ background-color:#fff; border-color:#999;}
+</style>
+
+<!--有用的HTML-->
+<div class="news_focus" id="pic_player_01">
+    <div class="slider_scroll">
+        <ul>
+        	<!--如果banner替换，请修改以下li的background-image的值-->
+            <li style="background-image:url(../images/banner_01.jpg)">&nbsp;</li>
+            <li style="background-image:url(../images/banner_02.jpg)">&nbsp;</li>
+            <li style="background-image:url(../images/banner_03.jpg)">&nbsp;</li>
+        </ul>
+    </div>
+    <div class="slider_ctrl">
+    	<span class="slider_ctrl_con current"></span>
+        <span class="slider_ctrl_con"></span>
+        <span class="slider_ctrl_con"></span>
+    </div>
+</div>
+<!--有用的HTML 结束-->
+
+
+<script type="text/javascript">
+
+/*有用的js 开始*/
+window.onload = function(){
+	//实例话轮播
+	var player = new PicPlayer("pic_player_01",5000);
+}
+
+
+//轮播实现类
+//引用格式如：var picPlayer = new PicPlayer("slider_02",4000);
+//如果nTime为flase的时候，则不自动轮播
+function PicPlayer(strId, nTime){
+	var nInterTime = nTime||false;
+	var index = 0;
+	var Wrapper = $('#'+strId);
+	var WrapperInner = Wrapper.find('.slider_scroll');
+	var Items = WrapperInner.find('li');
+	var maxIndex = Items.length -1;
+	var SliderCtrl = Wrapper.find('.slider_ctrl');
+	var SliderCtrlCon = SliderCtrl.find('.slider_ctrl_con');
+	var SliderCtrlPrev = SliderCtrl.find('.slider_ctrl_prev');
+	var SliderCtrlNext = SliderCtrl.find('.slider_ctrl_next');
+	var handleTime;
+	var handleInter;
+	var currentOpacity = 0;
+	var ifUnderMoving = false;
+	function init(){
+		/*鼠标在轮播上时，自动轮播中断*/
+		/*Wrapper[0].onmouseover = function(){
+			if(handleInter!=null){
+				clearInterval(handleInter);
+				handleInter = null;
+			}
+		}
+		Wrapper[0].onmouseout = function(){
+			if(handleInter!=null){
+				clearInterval(handleInter);
+				handleInter = null;
+			}
+			if(nInterTime){
+				handleInter = setInterval(AutoRun,nInterTime);
+			}
+			
+		}
+		*/
+		//梆定切换触发事件,可根据情况自定义
+		SliderCtrlCon.bind('click',ctrlConClick);
+		SliderCtrlPrev.bind('click',go_left);
+		SliderCtrlNext.bind('click',go_right);
+		for(var i = 0; i < Items.length; i++){
+			Items[i].style.zIndex = Items.length -i;
+		}
+		
+	}
+	function ctrlConClick(){
+		if(ifUnderMoving){
+			//图片正在切换，不能再操作。
+			return;
+		}
+		for(var i = 0; i < SliderCtrlCon.length; i++){
+			if(SliderCtrlCon[i] == this){
+				if(index != i) index = i;
+				Shift();
+				break;
+			}
+		}
+		if(handleInter != null){
+			clearInterval(handleInter);
+			handleInter = null;
+		}
+		if(nInterTime){
+			handleInter = setInterval(AutoRun,nInterTime);
+		}
+	}
+	function AutoRun(){
+		go_right();
+	}
+	
+	//分步进步图片的渐变隐入
+	function move(){
+		currentOpacity += 0.1;
+		if(currentOpacity<1){
+			Items.eq(index).css("opacity",currentOpacity);
+			handleTime = setTimeout(move,50);
+		}
+		else{
+			Items.eq(index).css("opacity",1);
+			ifUnderMoving = false;
+		}
+	}
+	//处理切换的逻辑
+	function Shift(){
+		ifUnderMoving = true;
+		SliderCtrlCon.removeClass('current');
+		SliderCtrlCon.eq(index).addClass('current');
+		
+		for(var i = 0; i < Items.length; i++){
+			if(i == index){
+				//新的图片要调到最上层，并置为透明
+				Items[i].style.zIndex = Items.length;
+				Items.eq(i).css("opacity",0);
+				currentOpacity = 0;
+			}else{
+				Items[i].style.zIndex = Items[i].style.zIndex -1;
+			}
+		}
+
+		move();
+	}
+	
+	function go_right(){
+		if(ifUnderMoving){
+			//播放器正在移动中，不能再操作。
+			return;
+		}
+		//已在最后一屏了，需要回到最左边
+		index++;
+		if(index > maxIndex){
+			index　=　0;
+		}
+		Shift();
+	}
+	this.goRight = go_right;
+	
+	function go_left(){
+		if(ifUnderMoving){
+			//播放器正在移动中，不能再操作。
+			return;
+		}
+		index--;
+		if(index < 0){
+			index = maxIndex;
+		}
+		
+		Shift();
+	}
+	this.goLeft = go_left;
+	
+	this.getIndex = function(){
+		return index;
+	}
+	init();
+	if(nInterTime){
+		handleInter = setInterval(AutoRun,nInterTime);
+	}
+}
+/*有用的js 结束*/
+</script>
+
+
+</body>
+</html>
